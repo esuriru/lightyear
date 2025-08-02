@@ -248,18 +248,20 @@ fn check_rollback(
     match prediction_manager.rollback_policy.state {
         // if we received a state update, we don't check for mismatched and just set the rollback tick
         RollbackMode::Always => {
-            if received_state && let Some(confirmed_ref) = confirmed_entities.iter().next() {
-                debug!(
-                    "Rollback because we have received a new confirmed state. (no mismatch check)"
-                );
-                let confirmed_tick = confirmed_ref.get::<Confirmed>().unwrap().tick;
-                do_rollback(
-                    confirmed_tick,
-                    &prediction_manager,
-                    &mut commands,
-                    Rollback::FromState,
-                );
-                return;
+            if received_state {
+                if let Some(confirmed_ref) = confirmed_entities.iter().next() {
+                    debug!(
+                        "Rollback because we have received a new confirmed state. (no mismatch check)"
+                    );
+                    let confirmed_tick = confirmed_ref.get::<Confirmed>().unwrap().tick;
+                    do_rollback(
+                        confirmed_tick,
+                        &prediction_manager,
+                        &mut commands,
+                        Rollback::FromState,
+                    );
+                    return;
+                }
             };
             skip_state_check = true;
         }
@@ -348,21 +350,21 @@ fn check_rollback(
         match prediction_manager.rollback_policy.input {
             // If we have received any input message, rollback from the last confirmed input
             RollbackMode::Always => {
-                if let Some(last_confirmed_input) = last_confirmed_input
-                    && last_confirmed_input.received_input()
-                {
-                    debug!(
-                        "Rollback because we have received a new remote input. (no mismatch check)"
-                    );
-                    // TODO: instead of rolling back to the last confirmed input, we could also just rollback
-                    //  to the previous confirmed state (the inputs are just 'extra')
-                    let rollback_tick = last_confirmed_input.tick.get();
-                    do_rollback(
-                        rollback_tick,
-                        &prediction_manager,
-                        &mut commands,
-                        Rollback::FromInputs,
-                    );
+                if let Some(last_confirmed_input) = last_confirmed_input {
+                    if last_confirmed_input.received_input() {
+                        debug!(
+                            "Rollback because we have received a new remote input. (no mismatch check)"
+                        );
+                        // TODO: instead of rolling back to the last confirmed input, we could also just rollback
+                        //  to the previous confirmed state (the inputs are just 'extra')
+                        let rollback_tick = last_confirmed_input.tick.get();
+                        do_rollback(
+                            rollback_tick,
+                            &prediction_manager,
+                            &mut commands,
+                            Rollback::FromInputs,
+                        );
+                    }
                 }
             }
             // Rollback from any mismatched input

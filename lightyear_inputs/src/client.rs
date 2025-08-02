@@ -686,12 +686,12 @@ fn receive_remote_player_input_messages<S: ActionStateSequence>(
         }
     });
 
-    if let Some(last_confirmed_input) = last_confirmed_input
-        && has_messages
-    {
-        last_confirmed_input
-            .received_any_messages
-            .store(true, bevy_platform::sync::atomic::Ordering::Relaxed);
+    if let Some(last_confirmed_input) = last_confirmed_input {
+        if has_messages {
+            last_confirmed_input
+                .received_any_messages
+                .store(true, bevy_platform::sync::atomic::Ordering::Relaxed);
+        }
     }
 }
 
@@ -768,25 +768,26 @@ fn update_buffer_from_remote_player_message<S: ActionStateSequence>(
         //  it just means that we are receiving a remote tick in advance of simulating that tick.
         //  (for example in lockstep mode, we should have all player inputs for tick T before simulating tick T,
         //  so we will receive those inputs in advance)
-        if let RollbackMode::Check = prediction_manager.rollback_policy.input
-            && let Some(mismatch) = mismatch
-            && mismatch <= tick
-        {
-            debug!(
-                ?entity,
-                ?tick,
-                ?end_tick,
-                ?mismatch,
-                "Mismatch detected for remote player input message!",
-            );
-            prediction_manager
-                .earliest_mismatch_input
-                .has_mismatches
-                .store(true, bevy_platform::sync::atomic::Ordering::Relaxed);
-            prediction_manager
-                .earliest_mismatch_input
-                .tick
-                .set_if_lower(mismatch);
+        if let RollbackMode::Check = prediction_manager.rollback_policy.input {
+            if let Some(mismatch) = mismatch {
+                if mismatch <= tick {
+                    debug!(
+                        ?entity,
+                        ?tick,
+                        ?end_tick,
+                        ?mismatch,
+                        "Mismatch detected for remote player input message!",
+                    );
+                    prediction_manager
+                        .earliest_mismatch_input
+                        .has_mismatches
+                        .store(true, bevy_platform::sync::atomic::Ordering::Relaxed);
+                    prediction_manager
+                        .earliest_mismatch_input
+                        .tick
+                        .set_if_lower(mismatch);
+                }
+            }
         }
 
         #[cfg(feature = "metrics")]

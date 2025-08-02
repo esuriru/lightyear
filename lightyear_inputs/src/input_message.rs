@@ -144,10 +144,13 @@ pub trait ActionStateSequence:
 
         // if there was 0 mismatch, fill the gap between previous_end_tick and end_tick
         if earliest_mismatch.is_none()
-            && let Some(prev_end) = previous_end_tick
         {
-            for delta in 1..(end_tick - prev_end + 1) {
-                input_buffer.set_raw(prev_end + delta, InputData::SameAsPrecedent);
+            if let Some(prev_end) = previous_end_tick
+            {
+                for delta in 1..(end_tick - prev_end + 1) {
+                    input_buffer.set_raw(prev_end + delta, InputData::SameAsPrecedent);
+                }
+
             }
         }
         debug!("input buffer after update: {input_buffer:?}");

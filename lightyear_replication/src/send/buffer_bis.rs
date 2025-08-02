@@ -337,12 +337,14 @@ pub fn replicate_entity_bis(
         };
         // we will consider that there probably is at least one sender that needs this component
         // so we will store it for delta-compression
-        if delta_compression && let Some((delta_manager, shared_tick)) = delta {
-            // NOTE: we are assuming that the tick of the entity having the DeltaManager is the same
-            //  as the tick of the senders
+        if delta_compression {
+            if let Some((delta_manager, shared_tick)) = delta {
+                // NOTE: we are assuming that the tick of the entity having the DeltaManager is the same
+                //  as the tick of the senders
 
-            // store the component value in the delta manager
-            delta_manager.store(entity, *shared_tick, *kind, data, component_registry);
+                // store the component value in the delta manager
+                delta_manager.store(entity, *shared_tick, *kind, data, component_registry);
+            }
         }
 
         // we serialize it once for all senders if there is no `map_entities`.
@@ -530,18 +532,20 @@ fn replicate_component_update_shared(
                     current_bevy_tick = ?sender.this_run,
                     "Prepare component update"
                 );
-                if delta_compression && let Some(delta) = delta {
-                    sender.prepare_delta_component_update(
-                        unmapped_entity,
-                        entity,
-                        group_id,
-                        component_kind,
-                        component_data,
-                        component_registry,
-                        delta,
-                        current_tick,
-                        entity_map,
-                    )?;
+                if delta_compression {
+                    if let Some(delta) = delta {
+                        sender.prepare_delta_component_update(
+                            unmapped_entity,
+                            entity,
+                            group_id,
+                            component_kind,
+                            component_data,
+                            component_registry,
+                            delta,
+                            current_tick,
+                            entity_map,
+                        )?;
+                    }
                 } else {
                     let raw_data = if let Some(component_bytes) = component_bytes {
                         component_bytes
